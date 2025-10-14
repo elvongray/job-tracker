@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+import os
+
+import uvicorn
+
+if __name__ == "__main__":
+    debug_mode = os.getenv("ENV") != "production"
+    workers_count = 2
+
+    log_config_path = "src/core/logging/uvicorn.json"
+
+    uvicorn.run(
+        "src.app:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT")),
+        reload=debug_mode,
+        log_config=log_config_path,
+        workers=workers_count if not debug_mode else 1,
+    )

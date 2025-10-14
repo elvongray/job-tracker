@@ -1,0 +1,11 @@
+.idea
+.DS_Store
+# local env files
+.env*.local
+.env.test.override
+.env*.dev
+.vscode
+node_modules
+dist
+scratch.py
+.pycharm/runConfigurations
