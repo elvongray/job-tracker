@@ -6,13 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.auth import utils
 from src.auth.schemas import UserCreate
 from src.user import models
-from src.user.schemas import User
+from src.user.schemas import UserRead
 from src.user.service import get_user_by_email
 
 logger = logging.getLogger(__name__)
 
 
-async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
+async def create_user(db: AsyncSession, user_create: UserCreate) -> UserRead:
     """Creates a new user account."""
     try:
         hashed_password = utils.get_password_hash(user_create.password)
@@ -25,7 +25,7 @@ async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
         # INFO: Log successful creation for audit trails
         logger.info(f"Successfully created user with email: {user_create.email}")
 
-        return User.model_validate(db_user)
+        return UserRead.model_validate(db_user)
 
     except IntegrityError:
         logger.error(
@@ -43,7 +43,9 @@ async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
         raise
 
 
-async def authenticate_user(db: AsyncSession, email: str, password: str) -> User | None:
+async def authenticate_user(
+    db: AsyncSession, email: str, password: str
+) -> UserRead | None:
     """Authenticates a user with email and password."""
     try:
         user = await get_user_by_email(db, email)

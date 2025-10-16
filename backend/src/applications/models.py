@@ -57,12 +57,17 @@ class LocationMode(str, Enum):
     HYBRID = "hybrid"
 
 
+def enum_values(enum_cls):
+    return [member.value for member in enum_cls]
+
+
 app_status_enum = PgEnum(
     AppStatus,
     name="app_status",
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 priority_enum = PgEnum(
@@ -71,6 +76,7 @@ priority_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 location_mode_enum = PgEnum(
@@ -79,6 +85,7 @@ location_mode_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 

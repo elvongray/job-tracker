@@ -19,7 +19,7 @@ def _set_etag(response: Response, version: int) -> None:
     response.headers["ETag"] = f'W/"{version}"'
 
 
-@router.get("/", response_model=schemas.ApplicationListResponse)
+@router.get("", response_model=schemas.ApplicationListResponse)
 async def list_applications(
     db: DbSession,
     current_user: Annotated[UserRead, Depends(get_current_user)],
@@ -47,7 +47,7 @@ async def list_applications(
 
 
 @router.post(
-    "/", response_model=schemas.ApplicationOut, status_code=status.HTTP_201_CREATED
+    "", response_model=schemas.ApplicationOut, status_code=status.HTTP_201_CREATED
 )
 async def create_application(
     response: Response,
@@ -90,7 +90,7 @@ async def update_application(
     current_user: Annotated[UserRead, Depends(get_current_user)],
     application_id: UUID,
     payload: schemas.ApplicationUpdate,
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     update_data = payload.model_dump(exclude_unset=True)
     application = await service.update_application(
@@ -110,7 +110,7 @@ async def delete_application(
     db: DbSession,
     current_user: Annotated[UserRead, Depends(get_current_user)],
     application_id: UUID,
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     await service.delete_application(
         db,

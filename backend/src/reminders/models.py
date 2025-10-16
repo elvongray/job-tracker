@@ -34,12 +34,17 @@ class ReminderChannel(str, Enum):
     CALENDAR = "calendar"
 
 
+def enum_values(enum_cls):
+    return [member.value for member in enum_cls]
+
+
 reminder_channel_enum = PgEnum(
     ReminderChannel,
     name="reminder_channel",
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 

@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 23e987ecd92c
+Revision ID: 9fc1df26e2fb
 Revises: 
-Create Date: 2025-10-14 13:25:27.238011
+Create Date: 2025-10-16 14:30:09.677099
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '23e987ecd92c'
+revision: str = '9fc1df26e2fb'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -40,11 +40,11 @@ def upgrade() -> None:
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('company', sa.String(length=255), nullable=False),
     sa.Column('role_title', sa.String(length=255), nullable=False),
-    sa.Column('status', postgresql.ENUM('DRAFT', 'APPLIED', 'SCREENING', 'RECRUITER_CALL', 'TECH_SCREEN', 'INTERVIEW_LOOP', 'OFFER', 'ACCEPTED', 'DECLINED', 'REJECTED', 'ON_HOLD', name='app_status', metadata=MetaData()), nullable=False),
+    sa.Column('status', postgresql.ENUM('Draft', 'Applied', 'Screening', 'Recruiter_Call', 'Tech_Screen', 'Interview_Loop', 'Offer', 'Accepted', 'Declined', 'Rejected', 'On_Hold', name='app_status', metadata=MetaData()), nullable=False),
     sa.Column('source', sa.String(length=128), nullable=False),
     sa.Column('application_date', sa.Date(), nullable=False),
-    sa.Column('priority', postgresql.ENUM('NONE', 'LOW', 'MEDIUM', 'HIGH', name='priority_level', metadata=MetaData()), nullable=False),
-    sa.Column('location_mode', postgresql.ENUM('REMOTE', 'ONSITE', 'HYBRID', name='location_mode', metadata=MetaData()), nullable=False),
+    sa.Column('priority', postgresql.ENUM('None', 'Low', 'Medium', 'High', name='priority_level', metadata=MetaData()), nullable=False),
+    sa.Column('location_mode', postgresql.ENUM('remote', 'onsite', 'hybrid', name='location_mode', metadata=MetaData()), nullable=False),
     sa.Column('location_text', sa.String(length=255), nullable=True),
     sa.Column('timezone', sa.String(length=64), nullable=True),
     sa.Column('job_url', sa.String(length=1024), nullable=True),
@@ -91,8 +91,8 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('user_id', sa.UUID(), nullable=False),
     sa.Column('application_id', sa.Uuid(), nullable=False),
-    sa.Column('type', postgresql.ENUM('INTERVIEW', 'FOLLOW_UP', 'CALL', 'EMAIL', 'OTHER', name='activity_type', metadata=MetaData()), nullable=False),
-    sa.Column('status', postgresql.ENUM('SCHEDULED', 'DONE', 'CANCELED', name='activity_status', metadata=MetaData()), nullable=False),
+    sa.Column('type', postgresql.ENUM('Interview', 'FollowUp', 'Call', 'Email', 'Other', name='activity_type', metadata=MetaData()), nullable=False),
+    sa.Column('status', postgresql.ENUM('scheduled', 'done', 'canceled', name='activity_status', metadata=MetaData()), nullable=False),
     sa.Column('starts_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('duration_minutes', sa.Integer(), nullable=True),
     sa.Column('timezone', sa.String(length=64), nullable=True),
@@ -101,12 +101,12 @@ def upgrade() -> None:
     sa.Column('next_action_due', sa.DateTime(timezone=True), nullable=True),
     sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('related_contacts', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('interview_stage', postgresql.ENUM('SCREENING', 'TECHNICAL', 'LOOP', 'OFFER', 'OTHER', name='interview_stage', metadata=MetaData()), nullable=True),
-    sa.Column('interview_medium', postgresql.ENUM('ONSITE', 'ZOOM', 'PHONE', 'GOOGLE_MEET', 'TEAMS', 'OTHER', name='interview_medium', metadata=MetaData()), nullable=True),
+    sa.Column('interview_stage', postgresql.ENUM('screening', 'technical', 'loop', 'offer', 'other', name='interview_stage', metadata=MetaData()), nullable=True),
+    sa.Column('interview_medium', postgresql.ENUM('onsite', 'zoom', 'phone', 'google_meet', 'teams', 'other', name='interview_medium', metadata=MetaData()), nullable=True),
     sa.Column('location_or_link', sa.String(length=512), nullable=True),
     sa.Column('agenda', sa.Text(), nullable=True),
     sa.Column('prep_checklist', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-    sa.Column('followup_channel', postgresql.ENUM('EMAIL', 'LINKEDIN', 'PHONE', 'OTHER', name='followup_channel', metadata=MetaData()), nullable=True),
+    sa.Column('followup_channel', postgresql.ENUM('email', 'linkedin', 'phone', 'other', name='followup_channel', metadata=MetaData()), nullable=True),
     sa.Column('template_used', sa.String(length=255), nullable=True),
     sa.Column('reply_deadline', sa.DateTime(timezone=True), nullable=True),
     sa.Column('version', sa.BigInteger(), nullable=False),
@@ -126,7 +126,7 @@ def upgrade() -> None:
     sa.Column('activity_id', sa.Uuid(), nullable=True),
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('due_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('channels', postgresql.ARRAY(postgresql.ENUM('IN_APP', 'EMAIL', 'CALENDAR', name='reminder_channel', metadata=MetaData())), nullable=False),
+    sa.Column('channels', postgresql.ARRAY(postgresql.ENUM('in_app', 'email', 'calendar', name='reminder_channel', metadata=MetaData())), nullable=False),
     sa.Column('sent', sa.Boolean(), nullable=False),
     sa.Column('sent_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('dedupe_key', sa.String(length=255), nullable=True),

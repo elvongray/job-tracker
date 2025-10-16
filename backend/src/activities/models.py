@@ -65,12 +65,17 @@ class FollowupChannel(str, Enum):
     OTHER = "other"
 
 
+def enum_values(enum_cls):
+    return [member.value for member in enum_cls]
+
+
 activity_type_enum = PgEnum(
     ActivityType,
     name="activity_type",
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 activity_status_enum = PgEnum(
@@ -79,6 +84,7 @@ activity_status_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 interview_stage_enum = PgEnum(
@@ -87,6 +93,7 @@ interview_stage_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 interview_medium_enum = PgEnum(
@@ -95,6 +102,7 @@ interview_medium_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 followup_channel_enum = PgEnum(
@@ -103,6 +111,7 @@ followup_channel_enum = PgEnum(
     metadata=SchemaBase.metadata,
     create_type=True,
     validate_strings=True,
+    values_callable=enum_values,
 )
 
 

@@ -18,7 +18,7 @@ def _set_etag(response: Response, version: int) -> None:
     response.headers["ETag"] = f'W/"{version}"'
 
 
-@router.get("/", response_model=list[schemas.ActivityOut])
+@router.get("", response_model=list[schemas.ActivityOut])
 async def list_activities(
     db: DbSession,
     current_user: Annotated[UserRead, Depends(get_current_user)],
@@ -33,7 +33,7 @@ async def list_activities(
 
 
 @router.post(
-    "/", response_model=schemas.ActivityOut, status_code=status.HTTP_201_CREATED
+    "", response_model=schemas.ActivityOut, status_code=status.HTTP_201_CREATED
 )
 async def create_activity(
     response: Response,
@@ -89,7 +89,7 @@ async def update_activity(
     current_user: Annotated[UserRead, Depends(get_current_user)],
     application_id: UUID = Query(..., description="Parent application identifier."),
     activity_id: UUID = Query(..., description="Activity identifier."),
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     update_data = payload.model_dump(exclude_unset=True)
     activity = await service.update_activity(
@@ -119,7 +119,7 @@ async def delete_activity(
     current_user: Annotated[UserRead, Depends(get_current_user)],
     application_id: UUID = Query(..., description="Parent application identifier."),
     activity_id: UUID = Query(..., description="Activity identifier."),
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     activity = await service.get_activity(
         db,

@@ -81,7 +81,7 @@ async def update_reminder(
     payload: schemas.ReminderUpdate,
     current_user: Annotated[UserRead, Depends(get_current_user)],
     reminder_id: UUID = Query(...),
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     update_data = payload.model_dump(exclude_unset=True)
     reminder = await service.update_reminder(
@@ -101,7 +101,7 @@ async def delete_reminder(
     db: DbSession,
     current_user: Annotated[UserRead, Depends(get_current_user)],
     reminder_id: UUID = Query(...),
-    if_match: Annotated[str | None, Header(default=None, alias="If-Match")] = None,
+    if_match: Annotated[str | None, Header(alias="If-Match")] = None,
 ):
     reminder = await service.get_reminder(
         db,
