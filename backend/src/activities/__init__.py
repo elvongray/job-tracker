@@ -1,4 +1,4 @@
-from . import schemas as schemas
+from . import schemas, service, utils
 from .models import Activity
 
-__all__ = ["Activity", "schemas"]
+__all__ = ["Activity", "schemas", "service", "utils"]
