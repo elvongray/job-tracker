@@ -55,8 +55,7 @@ async def create_activity(
     application_id: UUID,
     data: dict,
 ) -> Activity:
-    payload = {key: value for key, value in data.items() if value is not None}
-    activity = Activity(user_id=user_id, application_id=application_id, **payload)
+    activity = Activity(user_id=user_id, application_id=application_id, **data)
     if "id" in data and data["id"] is not None:
         activity.id = data["id"]
     db.add(activity)
@@ -64,6 +63,10 @@ async def create_activity(
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
+        logger.warning(
+            "Unable to create activity due to integrity error",
+            extra={"user_id": str(user_id), "application_id": str(application_id)},
+        )
         raise InvalidRequestError(
             "Unable to create activity with provided data."
         ) from exc

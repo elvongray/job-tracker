@@ -1,4 +1,4 @@
-from . import schemas as schemas
+from . import schemas, service, utils
 from .models import Reminder
 
-__all__ = ["Reminder", "schemas"]
+__all__ = ["Reminder", "schemas", "service", "utils"]

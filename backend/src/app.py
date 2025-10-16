@@ -6,6 +6,7 @@ from src.applications.router import router as applications_router
 from src.auth import router as auth_router
 from src.core.config import settings
 from src.core.error_handler import add_exception_handlers
+from src.reminders.router import router as reminders_router
 
 app = FastAPI()
 
@@ -28,3 +29,4 @@ def health():
 app.include_router(auth_router.router)
 app.include_router(applications_router)
 app.include_router(activities_router)
+app.include_router(reminders_router)
