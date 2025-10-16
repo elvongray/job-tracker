@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from uuid import UUID
 
 from fastapi import status
@@ -12,6 +13,8 @@ from src.applications.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
 from src.applications.models import Application, AppStatus, PriorityLevel
 from src.applications.utils import decode_cursor, encode_cursor, parse_if_match
 from src.core.exceptions import ApplicationError, InvalidRequestError, NotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 async def list_applications(
@@ -30,6 +33,19 @@ async def list_applications(
         raise InvalidRequestError("limit must be greater than zero.")
     if limit > MAX_PAGE_SIZE:
         raise InvalidRequestError(f"limit cannot exceed {MAX_PAGE_SIZE}.")
+
+    logger.debug(
+        "Listing applications",
+        extra={
+            "user_id": str(user_id),
+            "limit": limit,
+            "cursor": cursor,
+            "status": status_filter.value if status_filter else None,
+            "tag": tag,
+            "priority": priority.value if priority else None,
+            "archived": archived,
+        },
+    )
 
     query = (
         select(Application)
@@ -84,6 +100,14 @@ async def list_applications(
     applications = rows[:limit]
     next_cursor = encode_cursor(applications[-1]) if has_more and applications else None
 
+    logger.debug(
+        "Fetched applications",
+        extra={
+            "user_id": str(user_id),
+            "count": len(applications),
+            "next_cursor": next_cursor,
+        },
+    )
     return list(applications), next_cursor
 
 
@@ -106,6 +130,10 @@ async def create_application(
             "Unable to create application with provided data."
         ) from exc
     await db.refresh(application)
+    logger.info(
+        "Created application",
+        extra={"user_id": str(user_id), "application_id": str(application.id)},
+    )
     return application
 
 
@@ -128,10 +156,18 @@ async def get_application(
     result = await db.execute(query)
     application = result.scalars().first()
     if not application:
+        logger.warning(
+            "Application not found",
+            extra={"user_id": str(user_id), "application_id": str(application_id)},
+        )
         raise NotFoundError(
             "Application not found.",
             meta={"resource": "applications", "id": str(application_id)},
         )
+    logger.debug(
+        "Loaded application",
+        extra={"user_id": str(user_id), "application_id": str(application_id)},
+    )
     return application
 
 
@@ -148,6 +184,15 @@ async def update_application(
         db, user_id=user_id, application_id=application_id, eager=False
     )
     if application.version != expected_version:
+        logger.warning(
+            "Version conflict on application update",
+            extra={
+                "user_id": str(user_id),
+                "application_id": str(application_id),
+                "expected_version": expected_version,
+                "current_version": application.version,
+            },
+        )
         raise ApplicationError(
             "Row version does not match If-Match header.",
             status_code=status.HTTP_409_CONFLICT,
@@ -166,6 +211,14 @@ async def update_application(
         application.version += 1
         await db.commit()
         await db.refresh(application)
+        logger.info(
+            "Updated application",
+            extra={
+                "user_id": str(user_id),
+                "application_id": str(application_id),
+                "version": application.version,
+            },
+        )
     return application
 
 
@@ -181,6 +234,15 @@ async def delete_application(
         db, user_id=user_id, application_id=application_id, eager=False
     )
     if application.version != expected_version:
+        logger.warning(
+            "Version conflict on application delete",
+            extra={
+                "user_id": str(user_id),
+                "application_id": str(application_id),
+                "expected_version": expected_version,
+                "current_version": application.version,
+            },
+        )
         raise ApplicationError(
             "Row version does not match If-Match header.",
             status_code=status.HTTP_409_CONFLICT,
@@ -194,3 +256,7 @@ async def delete_application(
         )
     await db.delete(application)
     await db.commit()
+    logger.info(
+        "Deleted application",
+        extra={"user_id": str(user_id), "application_id": str(application_id)},
+    )
