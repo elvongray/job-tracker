@@ -1,133 +1,172 @@
-# 🚀 Spaced Repetition Flashcard App
+# Job Hunt Tracker
 
-A full-stack web application designed to help users learn and retain information using an algorithm based on the principles of spaced repetition. The frontend is built with **Next.js** and the backend is powered by **FastAPI**.
-
----
-
-## Live Application
-
-The live application is running at [flashcards](https://hiring-eniola-arinde-flashcards.vercel.app)
-
-1.  **Test login**
-
-    ```sh
-    Test email - test@flashcards.com
-    password - flashcards
-    ```
+A multi-user productivity suite for organizing job searches end-to-end. The platform combines rich application tracking, Kanban-style workflows, reminder automation, analytics, and offline support to help candidates stay on top of every opportunity.
 
 ---
 
-## Features
+## Table of Contents
 
-- **User Authentication**: Secure user signup and login using JWT (JSON Web Tokens).
-- **Protected Routes**: Middleware ensures that only authenticated users can access the dashboard and study pages.
-- **Admin Dashboard**: A central place to create new flashcards and view the status of all existing cards, including their current learning bin, incorrect answer count, and next review time.
-- **Spaced Repetition Engine**: The core of the application, which intelligently schedules cards for review based on user performance.
-- **Interactive Study Interface**: A clean, non-scrollable UI for focusing on one card at a time. Users can reveal the definition and mark their answers as correct or incorrect.
-- **Dynamic Status Messages**: The app provides clear feedback when a study session is temporarily or permanently complete.
+- [Product Overview](#product-overview)
+- [Architecture](#architecture)
+- [Backend](#backend)
+- [Frontend](#frontend)
+- [Getting Started](#getting-started)
+  - [Backend Setup](#backend-setup)
+  - [Frontend Setup](#frontend-setup)
+- [Environment Configuration](#environment-configuration)
+- [Key Workflows](#key-workflows)
+- [Testing](#testing)
+- [Roadmap](#roadmap)
 
 ---
 
-## Tech Stack
+## Product Overview
 
-### Frontend
+Job Hunt Tracker centralizes every aspect of a candidate’s pipeline:
 
-- **Framework**: [Next.js](https://nextjs.org/) (with App Router)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) & [neobrutalism.dev](https://www.neobrutalism.dev/)
-- **Form Management**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) for validation
-- **Date Handling**: [date-fns](https://date-fns.org/)
+- **Applications**: Capture company, role, source, salary expectations, notes, tags, and attachments. Track status transitions from Draft to Offer and beyond with optimistic concurrency controls.
+- **Activities**: Log interviews, follow-ups, calls, and emails. Include scheduling details, interview stages, prep checklists, and outcomes tied to each application.
+- **Reminders & Notifications**: Automate nudges via in-app, email, or calendar channels. Support custom reminders, default rules, quiet hours, and `.ics` calendar links.
+- **Kanban & Filters**: Visualize applications by stage with drag-and-drop updates. Filter by status, tags, priority, source, date ranges, and more.
+- **Analytics**: Summaries, trends, conversion rates, and time-in-stage metrics help candidates prioritize efforts.
+- **Offline-first**: The React app uses IndexedDB with an encrypted outbox to queue mutations when offline.
 
-### Backend
+Designed for security from day one: per-user data isolation, JWT + CSRF protections, encrypted caches, and optimistic concurrency across all mutating routes.
 
-- **Framework**: [FastAPI](https://fastapi.tiangolo.com/)
-- **Language**: [Python](https://www.python.org/)
-- **Database**: PostgreSQL (or SQLite) with [SQLAlchemy](https://www.sqlalchemy.org/) ORM
-- **Async Support**: [Uvicorn](https://www.uvicorn.org/) ASGI server
+---
+
+## Architecture
+
+| Layer               | Tech Stack                                                       | Highlights                                                                                   |
+| ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Frontend**        | Next.js, TypeScript, Tailwind CSS, TanStack React Query, Zustand | Offline cache with IndexedDB, optimistic UI, Kanban board, analytics dashboards              |
+| **Backend**         | FastAPI, SQLAlchemy, PostgreSQL                                  | Modular service layer, cursor-based pagination, RFC 7807 error responses, optimistic locking |
+| **Background Jobs** | Celery, Redis, APScheduler                                       | Reminder dispatch, quiet-hours deferral, email/calendar integrations                         |
+| **Auth**            | Passwordless magic links + Google OAuth (planned), JWT sessions  | Token rotation, session timeout controls                                                     |
+
+Supporting tooling: Alembic migrations, Sentry for monitoring, structured logging, and pluggable email/calendar providers.
+
+---
+
+## Backend
+
+Located in [`backend/`](backend), the FastAPI service is organized by domain:
+
+- `applications/`: SQLAlchemy models, Pydantic schemas, services, and routers for application CRUD, filtering, cursor pagination, and status transitions.
+- `activities/`: Manage interview/follow-up activities per application with optimistic concurrency, scheduling constraints, and reminder relationships.
+- `reminders/`: Custom and automated reminder management, including channel arrays, due date filters, and concurrency-safe updates.
+- `auth/`: Signup/login (JWT-based today), token utilities, and security dependencies. Planned upgrades include passwordless flows and OAuth.
+- `core/`: Configuration (`pydantic-settings`), exception handling, logging utilities, and shared helpers.
+- `db/`: SQLAlchemy engine/session management, base declarative class with UTC timestamps, and DB dependencies for FastAPI.
+
+### API Features
+
+- RESTful endpoints under `/applications`, `/activities`, and `/reminders` with ETag/If-Match headers for safe concurrent updates.
+- RFC 7807 “Problem Details” error contract with request metadata and correlation IDs.
+- Cursor-based pagination for scalable listing of applications.
+- Query filters for reminders (due ranges, sent status) and activities by parent application.
+
+### Logging & Observability
+
+- Structured JSON logs with `user_id`, `application_id`, `activity_id`, or `reminder_id` context where applicable.
+- Hooks for Sentry and OpenTelemetry (enable via environment settings).
+
+---
+
+## Frontend
+
+Located in [`frontend/`](frontend), the Next.js app (App Router) plans to deliver:
+
+- **Kanban Dashboard**: Draggable columns for each application status with sidebar details.
+- **Application Forms**: Guided creation with sensible defaults (status, source, dates).
+- **Activity Timelines**: Inline editing and scheduling helpers.
+- **Reminder Center**: Manage upcoming nudges, channels, and quiet hours.
+- **Analytics Views**: Stage conversion charts, source breakdowns, and response time metrics.
+
+State management uses Zustand for UI state and TanStack React Query for server cache synchronization. IndexedDB maintains an encrypted offline cache with conflict resolution on reconnect.
 
 ---
 
 ## Getting Started
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+### Backend Setup
 
-### Prerequisites
+```bash
+cd backend
 
-Make sure you have the following software installed:
+# Create virtual environment
+uv venv --python 3.11
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-- [Node.js](https://nodejs.org/en) (v18.x or later)
-- [Python](https://www.python.org/downloads/) (v3.8 or later)
-- [npm](https://www.npmjs.com/) or any other package manager like yarn or pnpm
+# Install dependencies
+uv sync
 
-### Installation & Setup
+# Run database migrations (placeholder)
+alembic upgrade head
 
-1.  **Clone the repository:**
+# Start API
+uvicorn src.app:app --reload
+```
 
-    ```sh
-    git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-    cd your-repo-name
-    ```
+### Frontend Setup
 
-2.  **Setup the Backend:**
+```bash
+cd frontend
 
-    ```sh
-    # Navigate to the backend directory
-    cd backend
+npm install
+npm run dev
+```
 
-    # Create a virtual environment
-    uv venv --python python-version
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+The frontend expects a backend at `http://localhost:8000` by default. Configure `NEXT_PUBLIC_API_BASE_URL` if you change ports/hosts.
 
-    # Install Python dependencies
-    uv install
-    ```
+---
 
-3.  **Setup the Frontend:**
+## Environment Configuration
 
-    ```sh
-    # Navigate to the frontend directory from the root
-    cd frontend
+Create `.env` files at the root of each app:
 
-    # Install Node.js dependencies
-    npm install
-    ```
+### `backend/.env`
 
-### Environment Variables
+```env
+APP_NAME="Job Hunt Tracker"
+DATABASE_URL="postgresql://user:password@host:5432/job_hunt_tracker"
+JWT_SECRET_KEY="replace-me"
+JWT_ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+FRONTEND_HOST="http://localhost:3000"
+```
 
-You'll need to create `.env` files for both the frontend and backend.
+### `frontend/.env.local`
 
-1.  **Backend `.env` file:**
-    In the `/backend` directory, create a `.env` file and add the necessary variables.
+```env
+NEXT_PUBLIC_API_BASE_URL="http://localhost:8000"
+```
 
-    ```env
-    # Example .env for the backend
-    DATABASE_URL="postgresql://user:password@host:port/database_name"
-    SECRET_KEY="your_super_secret_key_for_jwt"
-    ALGORITHM="HS256"
-    ```
+Other services (email providers, Redis, S3, etc.) will require additional keys as those integrations come online.
 
-2.  **Frontend `.env.local` file:**
-    In the `/frontend` directory, create a `.env.local` file to point to your backend API.
-    ```env
-    # Example .env.local for the frontend
-    NEXT_PUBLIC_API_BASE_URL="[http://127.0.0.1:8000](http://127.0.0.1:8000)"
-    ```
+---
 
-### Running the Application
+## Key Workflows
 
-1.  **Start the Backend Server:**
-    From the `/backend` directory (with your virtual environment activated):
+- **Applications**: `GET/POST/PATCH/DELETE /applications` with cursor pagination and filters.
+- **Activities**: `GET/POST /activities` with query param `application_id`; `PATCH/DELETE /activities/detail` with `activity_id`.
+- **Reminders**: `GET/POST /reminders`; `PATCH/DELETE /reminders/detail` with `reminder_id`. Filtering by due date and sent status supported.
+- **Auth**: `POST /auth/signup`, `/auth/login`; token verification handled via dependency injection for secure routes.
 
-    ```sh
-    fastapi run src/app.py
-    ```
+All mutating endpoints require an `If-Match` header carrying the current entity version.
 
-    The backend API will be running at `http://127.0.0.1:8000`.
+---
 
-2.  **Start the Frontend Development Server:**
-    From the `/frontend` directory in a new terminal window:
-    ```sh
-    npm run dev
-    ```
-    The frontend application will be accessible at `http://localhost:3000`.
+## Testing
+
+### Backend
+
+- `pytest` (async-ready) with httpx for integration tests.
+- Targeted unit tests for schema validation, default reminder scheduling, and concurrency error handling.
+- Celery workers and APScheduler jobs mocked for deterministic reminder tests.
+
+### Frontend
+
+- Playwright for E2E flows: application creation, Kanban drag/drop, reminder scheduling, offline mutation replay.
+- Vitest/React Testing Library for component-level validation.
