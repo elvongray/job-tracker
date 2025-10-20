@@ -1,24 +1,25 @@
-from fastapi import Cookie, Depends, Header
+from fastapi import Cookie, Depends
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import exceptions, utils
 from src.db.session import db_session
 from src.user import service
 
-
-def _extract_token(
-    authorization: str | None = Header(default=None),
-    access_token: str | None = Cookie(default=None),
-) -> str | None:
-    if authorization and authorization.lower().startswith("bearer "):
-        return authorization.split(" ", 1)[1]
-    return access_token
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    token: str | None = Depends(_extract_token),
+    bearer_credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    access_cookie: str | None = Cookie(default=None),
     db: AsyncSession = Depends(db_session),
 ):
+    token = None
+    if bearer_credentials:
+        token = bearer_credentials.credentials
+    elif access_cookie:
+        token = access_cookie
+
     if not token:
         raise exceptions.CREDENTIALS_EXCEPTION
     try:

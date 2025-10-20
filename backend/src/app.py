@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.activities.router import router as activities_router
 from src.applications.router import router as applications_router
-from src.auth import router as auth_router
+from src.auth.router import router as auth_router
 from src.core.config import settings
 from src.core.error_handler import add_exception_handlers
 from src.reminders.router import router as reminders_router

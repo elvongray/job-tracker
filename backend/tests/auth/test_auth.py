@@ -19,7 +19,10 @@ async def test_magic_link_flow(client: AsyncClient):
     assert "access_token" in data
     assert data["user"]["email"] == email
 
-    me_resp = await client.get("/auth/me")
+    me_resp = await client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {data['access_token']}"},
+    )
     assert me_resp.status_code == status.HTTP_200_OK
     assert me_resp.json()["email"] == email
 
