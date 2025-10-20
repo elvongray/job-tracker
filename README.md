@@ -152,7 +152,7 @@ Other services (email providers, Redis, S3, etc.) will require additional keys a
 - **Applications**: `GET/POST/PATCH/DELETE /applications` with cursor pagination and filters.
 - **Activities**: `GET/POST /activities` with query param `application_id`; `PATCH/DELETE /activities/detail` with `activity_id`.
 - **Reminders**: `GET/POST /reminders`; `PATCH/DELETE /reminders/detail` with `reminder_id`. Filtering by due date and sent status supported.
-- **Auth**: `POST /auth/signup`, `/auth/login`; token verification handled via dependency injection for secure routes.
+- **Auth**: Magic-link flow (`POST /auth/magic-link`, `/auth/magic-link/verify`), `GET /auth/me`, `POST /auth/logout`; optional Google OAuth placeholder.
 
 All mutating endpoints require an `If-Match` header carrying the current entity version.
 

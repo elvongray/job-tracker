@@ -26,7 +26,7 @@ def health():
     return {"status": "ok"}
 
 
-app.include_router(auth_router.router)
+app.include_router(auth_router)
 app.include_router(applications_router)
 app.include_router(activities_router)
 app.include_router(reminders_router)

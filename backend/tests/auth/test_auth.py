@@ -1,83 +1,45 @@
+from __future__ import annotations
+
 import pytest
+from fastapi import status
 from httpx import AsyncClient
-from jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from src.auth import service, utils
-from src.core.config import settings as auth_settings
-from src.user import models
 
 
 @pytest.mark.asyncio
-async def test_signup_user(client: AsyncClient, async_db_session: AsyncSession):
-    """Test user signup and token generation."""
-    user_data = {"email": "test@example.com", "password": "securepassword"}
+async def test_magic_link_flow(client: AsyncClient):
+    email = "magic@example.com"
 
-    # Hit the API
-    response = await client.post("/auth/signup", json=user_data)
-    assert response.status_code == 201
+    request_resp = await client.post("/auth/magic-link", json={"email": email})
+    assert request_resp.status_code == status.HTTP_202_ACCEPTED
+    token = request_resp.json()["token"]
 
-    token_data = response.json()
-    assert "access_token" in token_data
-    assert token_data["token_type"] == "bearer"
+    verify_resp = await client.post("/auth/magic-link/verify", json={"token": token})
+    assert verify_resp.status_code == status.HTTP_200_OK
+    data = verify_resp.json()
+    assert "access_token" in data
+    assert data["user"]["email"] == email
 
-    # Verify the token
-    decoded_token = jwt.decode(
-        token_data["access_token"],
-        auth_settings.JWT_SECRET_KEY,
-        algorithms=[auth_settings.JWT_ALGORITHM],
-    )
-    assert decoded_token["sub"] == user_data["email"]
+    me_resp = await client.get("/auth/me")
+    assert me_resp.status_code == status.HTTP_200_OK
+    assert me_resp.json()["email"] == email
 
-    # Fresh session for verification
-    db_user = await service.get_user_by_email(async_db_session, user_data["email"])
-    assert db_user is not None
-    assert db_user.email == user_data["email"]
+    reuse_resp = await client.post("/auth/magic-link/verify", json={"token": token})
+    assert reuse_resp.status_code == status.HTTP_400_BAD_REQUEST
 
+    logout_resp = await client.post("/auth/logout")
+    assert logout_resp.status_code == status.HTTP_204_NO_CONTENT
 
-@pytest.mark.asyncio
-async def test_login_user(client: AsyncClient, async_db_session: AsyncSession):
-    user_data = {"email": "login_test@example.com", "password": "password123"}
-    hashed_password = utils.get_password_hash(user_data["password"])
-
-    # Add the user to the session
-    user = models.User(email=user_data["email"], password=hashed_password)
-    async_db_session.add(user)
-
-    # Flush to make the user available in this transaction
-    await async_db_session.flush()
-
-    # --- Act: Try to log in via the API ---
-    login_data = {"email": user_data["email"], "password": user_data["password"]}
-    response = await client.post("/auth/login", json=login_data)
-
-    # --- Assert: Check the response ---
-    assert response.status_code == 200
-    response_data = response.json()
-    assert "access_token" in response_data
-    assert response_data.get("token_type") == "bearer"
+    me_after_logout = await client.get("/auth/me")
+    assert me_after_logout.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio
-async def test_login_user_incorrect_password(
-    client: AsyncClient, async_db_session: AsyncSession
-):
-    """Test login with an incorrect password."""
-    user_data = {"email": "wrongpass@example.com", "password": "correctpassword"}
-    hashed_password = utils.get_password_hash(user_data["password"])
+async def test_magic_link_invalid_token(client: AsyncClient):
+    response = await client.post("/auth/magic-link/verify", json={"token": "invalid"})
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    # Add the user to the session
-    user = models.User(email=user_data["email"], password=hashed_password)
-    async_db_session.add(user)
 
-    # Flush to make the user available in this transaction
-    await async_db_session.flush()
-
-    # Try to log in with wrong password
-    response = await client.post(
-        "/auth/login",
-        json={"email": user_data["email"], "password": "wrongpassword"},
-    )
-
-    assert response.status_code == 401
-    assert "Incorrect email or password" in response.json()["detail"]
+@pytest.mark.asyncio
+async def test_google_oauth_placeholder(client: AsyncClient):
+    response = await client.get("/auth/google")
+    assert response.status_code == status.HTTP_501_NOT_IMPLEMENTED

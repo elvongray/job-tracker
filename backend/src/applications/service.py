@@ -50,7 +50,7 @@ async def list_applications(
     query = (
         select(Application)
         .where(Application.user_id == user_id)
-        .order_by(Application.created_at.desc(), Application.id.desc())
+        .order_by(Application.created_at.desc())
         .options(
             selectinload(Application.activities), selectinload(Application.reminders)
         )

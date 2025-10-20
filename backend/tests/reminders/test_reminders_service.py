@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import pytest
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.applications import service as applications_service
@@ -140,7 +141,7 @@ async def test_update_reminder_version_conflict(async_db_session: AsyncSession):
     assert updated.title.startswith("Send detailed")
     assert updated.version == current_version + 1
 
-    with pytest.raises(ApplicationError):
+    with pytest.raises(ApplicationError) as exc:
         await reminders_service.update_reminder(
             async_db_session,
             user_id=user.id,
@@ -148,6 +149,7 @@ async def test_update_reminder_version_conflict(async_db_session: AsyncSession):
             update_data={"title": "Another change"},
             if_match=str(current_version),
         )
+    assert exc.value.status_code == status.HTTP_409_CONFLICT
 
 
 @pytest.mark.asyncio
@@ -193,10 +195,11 @@ async def test_delete_reminder_version_conflict(async_db_session: AsyncSession):
         },
     )
 
-    with pytest.raises(ApplicationError):
+    with pytest.raises(ApplicationError) as exc:
         await reminders_service.delete_reminder(
             async_db_session,
             user_id=user.id,
             reminder_id=reminder.id,
             if_match=str(reminder.version + 1),
         )
+    assert exc.value.status_code == status.HTTP_409_CONFLICT

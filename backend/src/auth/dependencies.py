@@ -1,19 +1,26 @@
-from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi import Cookie, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth import exceptions, utils
 from src.db.session import db_session
 from src.user import service
 
-# This defines the token URL for our OAuth2 scheme.
-# The `tokenUrl` points to the endpoint where a client can obtain a token.
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+def _extract_token(
+    authorization: str | None = Header(default=None),
+    access_token: str | None = Cookie(default=None),
+) -> str | None:
+    if authorization and authorization.lower().startswith("bearer "):
+        return authorization.split(" ", 1)[1]
+    return access_token
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(db_session)
+    token: str | None = Depends(_extract_token),
+    db: AsyncSession = Depends(db_session),
 ):
+    if not token:
+        raise exceptions.CREDENTIALS_EXCEPTION
     try:
         email = utils.decode_access_token(token)
     except Exception:

@@ -1,70 +1,88 @@
+from __future__ import annotations
+
 import logging
+import secrets
+from datetime import datetime, timedelta, timezone
 
-from sqlalchemy.exc import IntegrityError  # Import specific exception
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from src.auth import utils
-from src.auth.schemas import UserCreate
-from src.user import models
+from src.auth.models import MagicLinkToken
+from src.core.config import settings
+from src.core.exceptions import InvalidRequestError
+from src.user.models import User as UserModel
 from src.user.schemas import UserRead
-from src.user.service import get_user_by_email
 
 logger = logging.getLogger(__name__)
 
 
-async def create_user(db: AsyncSession, user_create: UserCreate) -> UserRead:
-    """Creates a new user account."""
-    try:
-        hashed_password = utils.get_password_hash(user_create.password)
-        db_user = models.User(email=user_create.email, password_hash=hashed_password)
+def _generate_token() -> str:
+    return secrets.token_urlsafe(32)
 
-        db.add(db_user)
-        await db.commit()
-        await db.refresh(db_user)
 
-        # INFO: Log successful creation for audit trails
-        logger.info(f"Successfully created user with email: {user_create.email}")
+async def request_magic_link(db: AsyncSession, email: str) -> tuple[str, UserRead]:
+    """Ensure a user exists for the email and create a magic link token."""
+    query = (
+        select(UserModel)
+        .where(UserModel.email == email)
+        .options(selectinload(UserModel.settings))
+    )
+    user = (await db.scalars(query)).one_or_none()
+    if not user:
+        user = UserModel(email=email)
+        db.add(user)
+        await db.flush()
+        logger.info("Created new user via magic link", extra={"email": email})
 
-        return UserRead.model_validate(db_user)
+    token_value = _generate_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.MAGIC_LINK_TOKEN_EXPIRE_MINUTES
+    )
+    token = MagicLinkToken(user_id=user.id, token=token_value, expires_at=expires_at)
+    db.add(token)
+    await db.commit()
 
-    except IntegrityError:
-        logger.error(
-            f"Failed to create user. Email '{user_create.email}' already exists."
+    refreshed_user = (
+        await db.scalars(
+            select(UserModel)
+            .where(UserModel.id == user.id)
+            .options(selectinload(UserModel.settings))
         )
-        await db.rollback()
-        raise
+    ).one()
+    return token_value, UserRead.model_validate(refreshed_user)
 
-    except Exception as e:
-        # EXCEPTION: Log any other unexpected error with a full stack trace
-        logger.exception(
-            f"An unexpected error occurred while creating user {user_create.email}: {e}"
+
+async def verify_magic_link(db: AsyncSession, token_value: str) -> UserRead:
+    """Validate a magic link token and return the associated user."""
+    query = (
+        select(MagicLinkToken)
+        .where(MagicLinkToken.token == token_value)
+        .options(selectinload(MagicLinkToken.user).selectinload(UserModel.settings))
+    )
+    token = (await db.scalars(query)).one_or_none()
+    now = datetime.now(timezone.utc)
+    if not token:
+        logger.warning("Magic link token not found", extra={"token": token_value})
+        raise InvalidRequestError("Invalid or expired token.")
+    if token.used_at is not None:
+        logger.warning(
+            "Magic link token already used",
+            extra={"token_id": str(token.id)},
         )
-        await db.rollback()
-        raise
-
-
-async def authenticate_user(
-    db: AsyncSession, email: str, password: str
-) -> UserRead | None:
-    """Authenticates a user with email and password."""
-    try:
-        user = await get_user_by_email(db, email)
-        if not user or not user.password_hash:
-            logger.warning(f"Failed authentication attempt for email: {email}")
-            return None
-
-        if not utils.verify_password(password, user.password_hash):
-            # WARNING: Log failed login attempts for security monitoring
-            logger.warning(f"Failed authentication attempt for email: {email}")
-            return None
-
-        # INFO: Log successful authentication
-        logger.info(f"User {email} authenticated successfully.")
-        return user
-
-    except Exception as e:
-        # EXCEPTION: Log unexpected database or other errors during authentication
-        logger.exception(
-            f"An unexpected error occurred during authentication for {email}: {e}"
+        raise InvalidRequestError("Token has already been used.")
+    if token.expires_at < now:
+        logger.warning(
+            "Magic link token expired",
+            extra={"token_id": str(token.id)},
         )
-        return None
+        raise InvalidRequestError("Token has expired.")
+
+    await db.execute(
+        update(MagicLinkToken).where(MagicLinkToken.id == token.id).values(used_at=now)
+    )
+    await db.commit()
+    user = token.user
+    if not user:
+        raise InvalidRequestError("Token is not associated with a user.")
+    return UserRead.model_validate(user)
