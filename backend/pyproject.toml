@@ -24,6 +24,9 @@ dependencies = [
     "psycopg2-binary>=2.9.10",
     "pytest>=7.4.4",
     "pytest-asyncio>=0.23.8",
+    "celery[redis]>=5.3.6,<6.0.0",
+    "redis>=5.0.4",
+    "tzdata>=2024.1",
 ]
 
 [dependency-groups]

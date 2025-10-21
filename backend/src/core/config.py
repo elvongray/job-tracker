@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     FRONTEND_HOST: str = "http://localhost:3000"
     COOKIE_SECURE: bool = False
     COOKIE_SAMESITE: str = "lax"
+    CELERY_BROKER_URL: str = "redis://127.0.0.1:6379/0"
+    CELERY_RESULT_BACKEND: str = "redis://127.0.0.1:6379/1"
+    TIMEZONE: str = "UTC"
+    REMINDER_SCAN_INTERVAL_SECONDS: int = 300
+    REMINDER_DISPATCH_BATCH_SIZE: int = 100
 
     @property
     def all_cors_origins(self) -> list[str]:

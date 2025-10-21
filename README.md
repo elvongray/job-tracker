@@ -37,12 +37,12 @@ Designed for security from day one: per-user data isolation, JWT + CSRF protecti
 
 ## Architecture
 
-| Layer               | Tech Stack                                                       | Highlights                                                                                   |
-| ------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Frontend**        | Next.js, TypeScript, Tailwind CSS, TanStack React Query, Zustand | Offline cache with IndexedDB, optimistic UI, Kanban board, analytics dashboards              |
-| **Backend**         | FastAPI, SQLAlchemy, PostgreSQL                                  | Modular service layer, cursor-based pagination, RFC 7807 error responses, optimistic locking |
-| **Background Jobs** | Celery, Redis, APScheduler                                       | Reminder dispatch, quiet-hours deferral, email/calendar integrations                         |
-| **Auth**            | Passwordless 6-digit codes + Google OAuth (planned), JWT sessions  | Token rotation, session timeout controls                                                     |
+| Layer               | Tech Stack                                                        | Highlights                                                                                   |
+| ------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| **Frontend**        | Next.js, TypeScript, Tailwind CSS, TanStack React Query, Zustand  | Offline cache with IndexedDB, optimistic UI, Kanban board, analytics dashboards              |
+| **Backend**         | FastAPI, SQLAlchemy, PostgreSQL                                   | Modular service layer, cursor-based pagination, RFC 7807 error responses, optimistic locking |
+| **Background Jobs** | Celery, Redis, APScheduler                                        | Reminder dispatch, quiet-hours deferral, email/calendar integrations                         |
+| **Auth**            | Passwordless 6-digit codes + Google OAuth (planned), JWT sessions | Token rotation, session timeout controls                                                     |
 
 Supporting tooling: Alembic migrations, Sentry for monitoring, structured logging, and pluggable email/calendar providers.
 
@@ -101,6 +101,9 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 # Install dependencies
 uv sync
 
+# start database
+docker compose up
+
 # Run database migrations (placeholder)
 alembic upgrade head
 
@@ -119,6 +122,15 @@ npm run dev
 
 The frontend expects a backend at `http://localhost:8000` by default. Configure `NEXT_PUBLIC_API_BASE_URL` if you change ports/hosts.
 
+### Background Worker
+
+Start the Celery worker (includes the reminder scan beat schedule) once Redis and Postgres are running:
+
+```bash
+cd backend
+celery -A src.background.celery_app.celery_app worker -B -l info
+```
+
 ---
 
 ## Environment Configuration
@@ -135,6 +147,10 @@ JWT_ALGORITHM="HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 BACKEND_CORS_ORIGINS=["http://localhost:3000"]
 FRONTEND_HOST="http://localhost:3000"
+CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
+CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/1"
+TIMEZONE="UTC"
+REMINDER_SCAN_INTERVAL_SECONDS=300
 ```
 
 ### `frontend/.env.local`

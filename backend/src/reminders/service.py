@@ -8,10 +8,12 @@ from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from src.core.exceptions import ApplicationError, InvalidRequestError, NotFoundError
 from src.reminders.models import Reminder
 from src.reminders.utils import parse_if_match
+from src.user.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -190,3 +192,24 @@ async def delete_reminder(
         "Deleted reminder",
         extra={"user_id": str(user_id), "reminder_id": str(reminder_id)},
     )
+
+
+async def get_due_reminders(
+    db: AsyncSession,
+    *,
+    now: datetime,
+) -> list[Reminder]:
+    """Return reminders that are due and not yet sent."""
+    query = (
+        select(Reminder)
+        .where(Reminder.sent.is_(False), Reminder.due_at <= now)
+        .options(selectinload(Reminder.user).selectinload(User.settings))
+        .order_by(Reminder.due_at.asc())
+    )
+    result = await db.execute(query)
+    reminders = result.scalars().all()
+    logger.debug(
+        "Fetched due reminders",
+        extra={"count": len(reminders), "timestamp": now.isoformat()},
+    )
+    return list(reminders)

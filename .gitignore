@@ -10,3 +10,4 @@ dist
 scratch.py
 .pycharm/runConfigurations
 Agent.md
+celerybeat-schedule

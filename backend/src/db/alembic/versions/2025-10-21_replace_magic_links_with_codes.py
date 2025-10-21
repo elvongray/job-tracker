@@ -29,22 +29,23 @@ def upgrade() -> None:
         op.drop_index(op.f('ix_magic_link_tokens_expires_at'), table_name='magic_link_tokens')
         op.drop_table('magic_link_tokens')
 
-    op.create_table(
-        'verification_codes',
-        sa.Column('id', sa.UUID(), nullable=False),
-        sa.Column('user_id', sa.UUID(), nullable=False),
-        sa.Column('code', sa.String(length=6), nullable=False),
-        sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('used_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f(
-            'fk_verification_codes_user_id_users'), ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id', name=op.f('pk_verification_codes')),
-        sa.UniqueConstraint('user_id', 'code', name='uq_verification_codes_user_code'),
-    )
-    op.create_index('ix_verification_codes_expires_at',
-                    'verification_codes', ['expires_at'], unique=False)
+    if not inspector.has_table('verification_codes'):
+        op.create_table(
+            'verification_codes',
+            sa.Column('id', sa.UUID(), nullable=False),
+            sa.Column('user_id', sa.UUID(), nullable=False),
+            sa.Column('code', sa.String(length=6), nullable=False),
+            sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
+            sa.Column('used_at', sa.DateTime(timezone=True), nullable=True),
+            sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+            sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+            sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f(
+                'fk_verification_codes_user_id_users'), ondelete='CASCADE'),
+            sa.PrimaryKeyConstraint('id', name=op.f('pk_verification_codes')),
+            sa.UniqueConstraint('user_id', 'code', name='uq_verification_codes_user_code'),
+        )
+        op.create_index('ix_verification_codes_expires_at',
+                        'verification_codes', ['expires_at'], unique=False)
 
 
 def downgrade() -> None:
