@@ -5,17 +5,17 @@ from pydantic import BaseModel, EmailStr
 from src.user.schemas import UserRead
 
 
-class MagicLinkRequest(BaseModel):
+class VerificationCodeRequest(BaseModel):
     email: EmailStr
 
 
-class MagicLinkResponse(BaseModel):
-    message: str = "Magic link sent"
-    token: str
+class VerificationCodeResponse(BaseModel):
+    message: str = "Verification code sent"
+    code: str
 
 
-class MagicLinkVerifyRequest(BaseModel):
-    token: str
+class VerificationCodeVerifyRequest(BaseModel):
+    code: str
 
 
 class Token(BaseModel):

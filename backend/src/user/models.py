@@ -22,7 +22,7 @@ from src.db.base import SchemaBase
 if TYPE_CHECKING:
     from src.activities.models import Activity
     from src.applications.models import Application
-    from src.auth.models import MagicLinkToken
+    from src.auth.models import VerificationCode
     from src.reminders.models import Reminder
 
 
@@ -66,7 +66,7 @@ class User(SchemaBase):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    magic_link_tokens: Mapped[list[MagicLinkToken]] = relationship(
+    verification_codes: Mapped[list[VerificationCode]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

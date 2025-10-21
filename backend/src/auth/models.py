@@ -13,11 +13,11 @@ if TYPE_CHECKING:
     from src.user.models import User
 
 
-class MagicLinkToken(SchemaBase):
-    __tablename__ = "magic_link_tokens"
+class VerificationCode(SchemaBase):
+    __tablename__ = "verification_codes"
     __table_args__ = (
-        UniqueConstraint("token", name="uq_magic_link_tokens_token"),
-        Index("ix_magic_link_tokens_expires_at", "expires_at"),
+        UniqueConstraint("user_id", "code", name="uq_verification_codes_user_code"),
+        Index("ix_verification_codes_expires_at", "expires_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -26,7 +26,7 @@ class MagicLinkToken(SchemaBase):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    token: Mapped[str] = mapped_column(String(255), nullable=False)
+    code: Mapped[str] = mapped_column(String(6), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -34,4 +34,4 @@ class MagicLinkToken(SchemaBase):
         DateTime(timezone=True), nullable=True
     )
 
-    user: Mapped[User] = relationship(back_populates="magic_link_tokens")
+    user: Mapped[User] = relationship(back_populates="verification_codes")

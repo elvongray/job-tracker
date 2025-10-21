@@ -6,14 +6,16 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_magic_link_flow(client: AsyncClient):
+async def test_verification_code_flow(client: AsyncClient):
     email = "magic@example.com"
 
-    request_resp = await client.post("/auth/magic-link", json={"email": email})
+    request_resp = await client.post("/auth/verification-code", json={"email": email})
     assert request_resp.status_code == status.HTTP_202_ACCEPTED
-    token = request_resp.json()["token"]
+    code = request_resp.json()["code"]
 
-    verify_resp = await client.post("/auth/magic-link/verify", json={"token": token})
+    verify_resp = await client.post(
+        "/auth/verification-code/verify", json={"code": code}
+    )
     assert verify_resp.status_code == status.HTTP_200_OK
     data = verify_resp.json()
     assert "access_token" in data
@@ -26,7 +28,9 @@ async def test_magic_link_flow(client: AsyncClient):
     assert me_resp.status_code == status.HTTP_200_OK
     assert me_resp.json()["email"] == email
 
-    reuse_resp = await client.post("/auth/magic-link/verify", json={"token": token})
+    reuse_resp = await client.post(
+        "/auth/verification-code/verify", json={"code": code}
+    )
     assert reuse_resp.status_code == status.HTTP_400_BAD_REQUEST
 
     logout_resp = await client.post("/auth/logout")
@@ -37,8 +41,10 @@ async def test_magic_link_flow(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_magic_link_invalid_token(client: AsyncClient):
-    response = await client.post("/auth/magic-link/verify", json={"token": "invalid"})
+async def test_verification_code_invalid(client: AsyncClient):
+    response = await client.post(
+        "/auth/verification-code/verify", json={"code": "000000"}
+    )
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 

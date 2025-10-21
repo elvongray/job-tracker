@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    MAGIC_LINK_TOKEN_EXPIRE_MINUTES: int = 15
+    VERIFICATION_CODE_EXPIRE_MINUTES: int = 15
     BACKEND_CORS_ORIGINS: list[str] = []
     FRONTEND_HOST: str = "http://localhost:3000"
     COOKIE_SECURE: bool = False

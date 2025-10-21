@@ -9,10 +9,17 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from src.activities.models import Activity  # noqa
 from src.app import app
+from src.applications.models import Application  # noqa
+from src.auth.models import VerificationCode  # noqa
 from src.core.config import settings
 from src.db.base import SchemaBase
 from src.db.session import db_session
+from src.reminders.models import Reminder  # noqa
+
+# Ensure all models are registered with the metadata before create_all
+from src.user.models import User  # noqa
 
 
 def _parse_database_url() -> dict[str, Any]:
@@ -45,18 +52,28 @@ TEST_DATABASE_URL = f"postgresql+asyncpg://{AUTH_SEGMENT}@{HOST_SEGMENT}/{TEST_D
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def ensure_test_database() -> None:
-    """Create the dedicated test database if it does not already exist."""
+    """Create the dedicated test database if it does not already exist and drop it after tests."""
     admin_engine = create_async_engine(ADMIN_DATABASE_URL, isolation_level="AUTOCOMMIT")
-    try:
-        async with admin_engine.connect() as conn:
-            result = await conn.execute(
-                text("SELECT 1 FROM pg_database WHERE datname = :db_name"),
-                {"db_name": TEST_DB_NAME},
-            )
-            if result.scalar() is None:
-                await conn.execute(text(f'CREATE DATABASE "{TEST_DB_NAME}"'))
-    finally:
-        await admin_engine.dispose()
+    async with admin_engine.connect() as conn:
+        result = await conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :db_name"),
+            {"db_name": TEST_DB_NAME},
+        )
+        if result.scalar() is None:
+            await conn.execute(text(f'CREATE DATABASE "{TEST_DB_NAME}"'))
+
+    yield
+
+    async with admin_engine.connect() as conn:
+        await conn.execute(
+            text(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = :db_name"
+            ),
+            {"db_name": TEST_DB_NAME},
+        )
+        await conn.execute(text(f'DROP DATABASE IF EXISTS "{TEST_DB_NAME}"'))
+
+    await admin_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -109,7 +126,7 @@ async def async_db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def client() -> AsyncGenerator[AsyncClient, None]:
+async def client(async_db_session) -> AsyncGenerator[AsyncClient, None]:  # noqa: ARG001
     """Provide an AsyncClient for HTTP requests in tests."""
     async with AsyncClient(
         transport=ASGITransport(app=app),

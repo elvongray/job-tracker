@@ -42,7 +42,7 @@ Designed for security from day one: per-user data isolation, JWT + CSRF protecti
 | **Frontend**        | Next.js, TypeScript, Tailwind CSS, TanStack React Query, Zustand | Offline cache with IndexedDB, optimistic UI, Kanban board, analytics dashboards              |
 | **Backend**         | FastAPI, SQLAlchemy, PostgreSQL                                  | Modular service layer, cursor-based pagination, RFC 7807 error responses, optimistic locking |
 | **Background Jobs** | Celery, Redis, APScheduler                                       | Reminder dispatch, quiet-hours deferral, email/calendar integrations                         |
-| **Auth**            | Passwordless magic links + Google OAuth (planned), JWT sessions  | Token rotation, session timeout controls                                                     |
+| **Auth**            | Passwordless 6-digit codes + Google OAuth (planned), JWT sessions  | Token rotation, session timeout controls                                                     |
 
 Supporting tooling: Alembic migrations, Sentry for monitoring, structured logging, and pluggable email/calendar providers.
 
@@ -152,7 +152,7 @@ Other services (email providers, Redis, S3, etc.) will require additional keys a
 - **Applications**: `GET/POST/PATCH/DELETE /applications` with cursor pagination and filters.
 - **Activities**: `GET/POST /activities` with query param `application_id`; `PATCH/DELETE /activities/detail` with `activity_id`.
 - **Reminders**: `GET/POST /reminders`; `PATCH/DELETE /reminders/detail` with `reminder_id`. Filtering by due date and sent status supported.
-- **Auth**: Magic-link flow (`POST /auth/magic-link`, `/auth/magic-link/verify`), `GET /auth/me`, `POST /auth/logout`; optional Google OAuth placeholder.
+- **Auth**: Verification code flow (`POST /auth/verification-code`, `/auth/verification-code/verify`), `GET /auth/me`, `POST /auth/logout`; optional Google OAuth placeholder.
 
 All mutating endpoints require an `If-Match` header carrying the current entity version.
 

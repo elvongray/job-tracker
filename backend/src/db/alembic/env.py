@@ -9,6 +9,7 @@ from src.user.models import User  # noqa
 from src.applications.models import Application  # noqa
 from src.activities.models import Activity  # noqa
 from src.reminders.models import Reminder  # noqa
+from src.auth.models import VerificationCode  # noqa
 from src.db.base import SchemaBase  # Import your Base model
 from src.db.session import db_connection_string
 

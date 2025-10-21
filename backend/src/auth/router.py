@@ -27,26 +27,26 @@ def _set_access_cookie(response: Response, access_token: str) -> None:
 
 
 @router.post(
-    "/magic-link",
-    response_model=schemas.MagicLinkResponse,
+    "/verification-code",
+    response_model=schemas.VerificationCodeResponse,
     status_code=status.HTTP_202_ACCEPTED,
 )
-async def request_magic_link(
-    payload: schemas.MagicLinkRequest,
+async def request_verification_code(
+    payload: schemas.VerificationCodeRequest,
     db: DbSession,
 ):
-    token, _ = await service.request_magic_link(db, email=payload.email)
-    # In production, the token would be emailed. We return it for testing convenience.
-    return schemas.MagicLinkResponse(token=token)
+    code, _ = await service.request_verification_code(db, email=payload.email)
+    # In production, the code would be emailed or sent via SMS. Return for tests.
+    return schemas.VerificationCodeResponse(code=code)
 
 
-@router.post("/magic-link/verify", response_model=schemas.AuthResponse)
-async def verify_magic_link(
-    payload: schemas.MagicLinkVerifyRequest,
+@router.post("/verification-code/verify", response_model=schemas.AuthResponse)
+async def verify_verification_code(
+    payload: schemas.VerificationCodeVerifyRequest,
     response: Response,
     db: DbSession,
 ):
-    user = await service.verify_magic_link(db, payload.token)
+    user = await service.verify_verification_code(db, payload.code)
     access_token = utils.create_access_token(data={"sub": user.email})
     _set_access_cookie(response, access_token)
     return schemas.AuthResponse(access_token=access_token, user=user)
