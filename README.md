@@ -128,7 +128,7 @@ Start the Celery worker (includes the reminder scan beat schedule) once Redis an
 
 ```bash
 cd backend
-celery -A src.background.celery_app.celery_app worker -B -l info
+uv run celery -A src.background.celery_app.celery_app worker -B -l info
 ```
 
 ---
@@ -151,6 +151,15 @@ CELERY_BROKER_URL="redis://127.0.0.1:6379/0"
 CELERY_RESULT_BACKEND="redis://127.0.0.1:6379/1"
 TIMEZONE="UTC"
 REMINDER_SCAN_INTERVAL_SECONDS=300
+REMINDER_DISPATCH_BATCH_SIZE=100
+MAIL_USERNAME=""
+MAIL_PASSWORD=""
+MAIL_FROM="notifications@example.com"
+MAIL_FROM_NAME="Job Hunt Tracker"
+MAIL_SERVER="smtp.gmail.com"
+MAIL_PORT=587
+MAIL_TLS=true
+MAIL_SSL=false
 ```
 
 ### `frontend/.env.local`

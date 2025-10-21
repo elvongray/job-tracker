@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from src.auth.models import VerificationCode
+from src.background.tasks.email import send_email_task
 from src.core.config import settings
 from src.core.exceptions import InvalidRequestError
 from src.user.models import User as UserModel
@@ -54,7 +55,21 @@ async def request_verification_code(
             .options(selectinload(UserModel.settings))
         )
     ).one()
-    return code_value, UserRead.model_validate(refreshed_user)
+    user_read = UserRead.model_validate(refreshed_user)
+
+    if user_read.email:
+        send_email_task.delay(
+            recipients=[user_read.email],
+            subject="Your Job Hunt Tracker verification code",
+            template_name="verification_code_email.html",
+            template_body={
+                "code": code_value,
+                "expires_in": settings.VERIFICATION_CODE_EXPIRE_MINUTES,
+                "email": user_read.email,
+            },
+        )
+
+    return code_value, user_read
 
 
 async def verify_verification_code(db: AsyncSession, code_value: str) -> UserRead:

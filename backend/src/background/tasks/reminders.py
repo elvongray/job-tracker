@@ -5,17 +5,9 @@ import logging
 
 from src.background.celery_app import celery_app
 from src.background.reminder_engine import process_due_reminders
-from src.db.session import (
-    async_db_connection_string,
-    async_db_session_context,
-    async_session_factory,
-)
+from src.db.session import get_db_session
 
 logger = logging.getLogger(__name__)
-
-_session_factory = async_session_factory(
-    db_connection_string=async_db_connection_string
-)
 
 
 @celery_app.task(
@@ -28,5 +20,5 @@ def scan_due_reminders() -> None:
 
 
 async def _run_scan() -> None:
-    async with async_db_session_context(_session_factory) as session:
+    async with get_db_session() as session:
         await process_due_reminders(session)

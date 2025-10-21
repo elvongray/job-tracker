@@ -24,6 +24,15 @@ class Settings(BaseSettings):
     TIMEZONE: str = "UTC"
     REMINDER_SCAN_INTERVAL_SECONDS: int = 300
     REMINDER_DISPATCH_BATCH_SIZE: int = 100
+    MAIL_USERNAME: str = ""
+    MAIL_PASSWORD: str = ""
+    MAIL_FROM: str = ""
+    MAIL_FROM_NAME: str = "Job Hunt Tracker"
+    MAIL_SERVER: str = "smtp.gmail.com"
+    MAIL_PORT: int = 587
+    MAIL_TLS: bool = True
+    MAIL_SSL: bool = False
+    MAIL_TEMPLATE_DIR: str = "src/background/email_templates"
 
     @property
     def all_cors_origins(self) -> list[str]:

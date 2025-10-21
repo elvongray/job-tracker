@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.background.tasks.email import send_email_task
 from src.core.config import settings
 from src.reminders import service as reminder_service
 from src.reminders.models import Reminder, ReminderChannel
@@ -61,7 +62,26 @@ def _dispatch_reminder(reminder: Reminder, now: datetime) -> None:
     meta = dict(reminder.meta or {})
     meta["dispatched_channels"] = dispatched
     meta["dispatched_at"] = now.isoformat()
+
+    default_body = (
+        f"Reminder: {reminder.title}."
+        f" Due at {reminder.due_at.astimezone(timezone.utc).isoformat()}"
+    )
+    meta_body = meta.get("body") or default_body
     reminder.meta = meta
+
+    if ReminderChannel.EMAIL.value in dispatched and reminder.user:
+        recipients = [reminder.user.email]
+        send_email_task.delay(
+            recipients,
+            subject=reminder.title,
+            template_name="reminder_email.html",
+            template_body={
+                "title": reminder.title,
+                "body": meta_body,
+                "action_url": meta.get("action_url"),
+            },
+        )
 
 
 def _parse_channels(

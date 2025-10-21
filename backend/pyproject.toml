@@ -27,6 +27,7 @@ dependencies = [
     "celery[redis]>=5.3.6,<6.0.0",
     "redis>=5.0.4",
     "tzdata>=2024.1",
+    "fastapi-mail>=1.4.1",
 ]
 
 [dependency-groups]
